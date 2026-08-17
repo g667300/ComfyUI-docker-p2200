@@ -1,0 +1,14 @@
+# ComfyUI source (cloned by build.sh)
+app/
+
+# Runtime data mounted as volumes (see docker-compose.yml)
+workflows/
+custom_nodes/
+output/
+input/
+models/
+temp/
+
+# Misc
+*.log
+.venv/

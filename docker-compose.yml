@@ -1,0 +1,54 @@
+# Compose file dedicated to Quadro P2200 (Pascal / sm_61 / 5GB VRAM)
+#
+# Usage:
+#   GID=$(id -g) docker compose up --build
+#   → http://localhost:8188
+#
+# workflows, custom_nodes, output, input, models, and temp all point to
+# directories under this same folder (e.g. ./workflows).
+
+services:
+  comfyui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: comfyui-p2200
+    container_name: comfyui-p2200
+    user: "root:${GID:-1000}"
+    ports:
+      - "8188:8188"
+    environment:
+      - PIP_BREAK_SYSTEM_PACKAGES=1
+      - UV_BREAK_SYSTEM_PACKAGES=1
+      - FORCE_CUDA=1
+      - HF_HUB_OFFLINE=1
+      - HF_HOME=/root/.cache/huggingface
+      - HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - TORCH_CUDA_ARCH_LIST=6.1
+      - TORCH_NVCC_FLAGS=-gencode=arch=compute_61,code=sm_61
+      - NVCC_FLAGS=-gencode=arch=compute_61,code=sm_61
+    # Launch with --lowvram since VRAM is 5GB
+    command: ["--lowvram", "--cache-lru", "50"]
+    volumes:
+      - ./workflows:/app/ComfyUI/user/default/workflows
+      - ./custom_nodes:/app/ComfyUI/custom_nodes
+      - ./output:/app/ComfyUI/output
+      - ./input:/app/ComfyUI/input
+      - ./models:/app/ComfyUI/models
+      - ./temp:/app/ComfyUI/temp
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - pip_cache:/root/.cache/pip
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              # Which index the P2200 appears at in nvidia-smi on a host with
+              # multiple GPUs is environment-dependent. Check nvidia-smi -L on
+              # the actual machine and specify the index or GPU-UUID here if needed
+              device_ids: ["1"]
+              capabilities: [gpu]
+
+volumes:
+  pip_cache:
